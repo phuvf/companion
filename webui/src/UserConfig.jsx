@@ -217,7 +217,7 @@ function UserConfigTable() {
 				</tr>
 				<tr>
 					<td>
-						Enable connected Loupedeck Live and Razer Stream Controller devices
+						Enable connected Loupedeck and Razer Stream Controller devices
 						<br />
 						<em>(Requires Companion restart)</em>
 					</td>
@@ -312,6 +312,17 @@ function UserConfigTable() {
 							<FontAwesomeIcon icon={faUndo} />
 						</CButton>
 					</td>
+				</tr>
+
+				<tr>
+					<th colSpan="3" className="settings-category">
+						Satellite
+					</th>
+				</tr>
+				<tr>
+					<td>Satellite Listen Port</td>
+					<td>16622</td>
+					<td></td>
 				</tr>
 
 				<tr>
@@ -461,6 +472,12 @@ function UserConfigTable() {
 					</td>
 				</tr>
 				<tr>
+					<td>Rosstalk Listen Port</td>
+					<td>7788</td>
+					<td></td>
+				</tr>
+
+				<tr>
 					<th colSpan="3" className="settings-category">
 						Ember+
 					</th>
@@ -483,6 +500,12 @@ function UserConfigTable() {
 						</CButton>
 					</td>
 				</tr>
+				<tr>
+					<td>Ember+ Listen Port</td>
+					<td>9092</td>
+					<td></td>
+				</tr>
+
 				<tr>
 					<th colSpan="3" className="settings-category">
 						Artnet Listener
