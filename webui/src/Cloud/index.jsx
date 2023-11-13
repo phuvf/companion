@@ -90,7 +90,7 @@ export class Cloud extends Component {
 			>
 				<h4>Companion Cloud</h4>
 				<p>
-					Access the Companion GUI from your Bitfocus Cloud account, or create a sophisticated network of Companion
+					Access your Companion buttons from your Bitfocus Cloud account, or create a sophisticated network of Companion
 					installations that work together over the internet for all your remote production needs.
 				</p>
 				<div
@@ -100,8 +100,9 @@ export class Cloud extends Component {
 				>
 					<div>
 						When enabled, Companion will make several persistent secure connections to different Bitfocus Cloud regions
-						for redundancy. You can learn more about the service, the service provider and the safety of your data{' '}
-						<a target="_new" href="https://cloud.bitfocus.io/product/companion-cloud">
+						for redundancy. You can learn more about the service, the service provider and the safety of your data in
+						the Companion Cloud documentation{' '}
+						<a target="_new" href="https://user.bitfocus.io/docs/companion-cloud">
 							here
 						</a>
 						.
@@ -266,10 +267,10 @@ export class Cloud extends Component {
  * @property {boolean} authenticated - is the cloud authenticated
  * @property {string} authenticatedAs - the cloud username
  * @property {boolean} ping - is someone watching ping info?
- * @property {Array} regions - the cloud regions
+ * @property {string[]} regions - the cloud regions
  * @property {string} tryUsername - the username to try
  * @property {string} tryPassword - the password to try
- * @property {null|string} tryError - the error message
+ * @property {null|string} error - the error message
  * @property {boolean} cloudActive - is the cloud active
  * @property {boolean} canActivate - can the cloud be activated
  */

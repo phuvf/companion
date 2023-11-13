@@ -1,6 +1,6 @@
 const path = require('path')
 const fs = require('fs')
-const SentryWebpackPlugin = require('@sentry/webpack-plugin')
+const { sentryWebpackPlugin } = require('@sentry/webpack-plugin')
 
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN
 
@@ -11,6 +11,7 @@ module.exports = {
 	entry: {
 		main: './main.js',
 		// Handler: './lib/Surface/USB/Handler.js',
+		RenderThread: './lib/Graphics/Thread.js',
 	},
 	mode: 'production',
 	devtool: sentryAuthToken ? 'source-map' : undefined,
@@ -45,7 +46,7 @@ module.exports = {
 		bufferutil: 'commonjs2 bufferutil',
 		'utf-8-validate': 'commonjs2 utf-8-validate',
 		'@serialport/bindings-cpp': 'commonjs2 @serialport/bindings-cpp',
-		'skia-canvas': 'commonjs2 skia-canvas',
+		'@julusian/skia-canvas': 'commonjs2 @julusian/skia-canvas',
 	},
 	experiments: {
 		topLevelAwait: true,
@@ -74,20 +75,30 @@ module.exports = {
 	},
 	plugins: [
 		sentryAuthToken
-			? new SentryWebpackPlugin({
+			? sentryWebpackPlugin({
 					url: 'https://sentry.bitfocus.io/',
 					authToken: sentryAuthToken,
 
 					org: 'bitfocus',
 					project: 'companion',
 
-					include: distPath,
-					urlPrefix: '~/',
+					// sourcemaps: {
+					// 	assets: [path.join(distPath, '**')],
+					// 	deleteFilesAfterUpload: [path.join(distPath, '**/*.map')],
+					// },
 
 					// Auth tokens can be obtained from https://sentry.io/settings/account/api/auth-tokens/
 					// and needs the `project:releases` and `org:read` scopes
 
-					release: `companion@${buildFile}`,
+					release: {
+						name: `companion@${buildFile}`,
+
+						// HACK: use the legacy method for now, as bitfocus sentry is too old to support the new way
+						uploadLegacySourcemaps: {
+							paths: [distPath],
+							urlPrefix: '~/',
+						},
+					},
 			  })
 			: '',
 	].filter(Boolean),

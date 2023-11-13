@@ -1,7 +1,9 @@
 /* eslint-disable import/first */
 
 import '@fontsource/roboto'
+import '@fontsource/fira-code'
 import './App.scss'
+import './Constants'
 
 if (process.env.NODE_ENV === 'development') {
 	const defineProperties = Object.defineProperties
@@ -26,7 +28,7 @@ import { SocketContext } from './util'
 // import LanguageDetector from 'i18next-browser-languagedetector'
 // import { initReactI18next } from 'react-i18next'
 import { GettingStarted } from './GettingStarted'
-import { Tablet } from './Tablet'
+import { TabletView } from './TabletView'
 import { Emulator } from './Emulator/Emulator'
 import { EmulatorList } from './Emulator/List'
 import { ConnectionDebug } from './ConnectionDebug'
@@ -74,7 +76,7 @@ ReactDOM.render(
 					<Route path="/ipad.html" element={<Navigate to="/tablet" replace />} />
 					<Route path="/tablet3" element={<Navigate to="/tablet" replace />} />
 
-					<Route path="/tablet" element={<Tablet />} />
+					<Route path="/tablet" element={<TabletView />} />
 					<Route path="/*" element={<App />} />
 				</Routes>
 			</BrowserRouter>

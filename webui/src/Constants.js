@@ -1,8 +1,7 @@
 import { Buffer } from 'buffer'
 
-export const MAX_BUTTONS = 32
-export const MAX_COLS = 8
-export const MAX_ROWS = MAX_BUTTONS / MAX_COLS
+// Hack for csv library which needs a global 'Buffer'
+window.Buffer = Buffer
 
 export const FONT_SIZES = [
 	{ id: 'auto', label: 'Auto' },

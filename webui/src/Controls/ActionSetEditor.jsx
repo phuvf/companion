@@ -29,9 +29,17 @@ import { usePanelCollapseHelper } from '../Helpers/CollapseHelper'
 import CSwitch from '../CSwitch'
 import { OptionButtonPreview } from './OptionButtonPreview'
 import { MenuPortalContext } from '../Components/DropdownInputField'
-import { ParseControlId } from '@companion/shared/ControlId'
 
-export function ControlActionSetEditor({ controlId, stepId, setId, actions, addPlaceholder, heading, headingActions }) {
+export function ControlActionSetEditor({
+	controlId,
+	location,
+	stepId,
+	setId,
+	actions,
+	addPlaceholder,
+	heading,
+	headingActions,
+}) {
 	const socket = useContext(SocketContext)
 
 	const confirmModal = useRef()
@@ -141,7 +149,7 @@ export function ControlActionSetEditor({ controlId, stepId, setId, actions, addP
 			</h4>
 			<GenericConfirmModal ref={confirmModal} />
 			<ActionsList
-				isOnControl={true}
+				location={location}
 				controlId={controlId}
 				dragId={`${controlId}_actions`}
 				stepId={stepId}
@@ -186,7 +194,7 @@ function AddActionsPanel({ addPlaceholder, addAction }) {
 }
 
 export function ActionsList({
-	isOnControl,
+	location,
 	controlId,
 	dragId,
 	stepId,
@@ -225,7 +233,7 @@ export function ActionsList({
 						<MyErrorBoundary key={a?.id ?? i}>
 							<ActionTableRow
 								key={a?.id ?? i}
-								isOnControl={isOnControl}
+								location={location}
 								action={a}
 								index={i}
 								stepId={stepId}
@@ -283,7 +291,7 @@ function ActionTableRow({
 	action,
 	stepId,
 	setId,
-	isOnControl,
+	location,
 	index,
 	dragId,
 	controlId,
@@ -377,7 +385,7 @@ function ActionTableRow({
 		for (const option of options) {
 			try {
 				if (typeof option.isVisible === 'function') {
-					visibility[option.id] = option.isVisible(action.options)
+					visibility[option.id] = option.isVisible(action.options, option.isVisibleData)
 				}
 			} catch (e) {
 				console.error('Failed to check visibility', e)
@@ -398,14 +406,6 @@ function ActionTableRow({
 		setCollapsed(action.id, false)
 	}, [setCollapsed, action.id])
 
-	const previewControlIdFunction = useMemo(() => {
-		if (action?.instance === 'internal' && actionSpec?.previewControlIdFn) {
-			return sandbox(actionSpec.previewControlIdFn)
-		} else {
-			return undefined
-		}
-	}, [action?.instance, actionSpec?.previewControlIdFn])
-
 	if (!action) {
 		// Invalid action, so skip
 		return ''
@@ -416,7 +416,8 @@ function ActionTableRow({
 	const instanceLabel = instance?.label ?? action.instance
 
 	const options = actionSpec?.options ?? []
-	const previewControlId = previewControlIdFunction?.(action.options, ParseControlId(controlId))
+
+	const showButtonPreview = action?.instance === 'internal' && actionSpec?.showButtonPreview
 
 	let name = ''
 	if (actionSpec) {
@@ -431,7 +432,7 @@ function ActionTableRow({
 				<FontAwesomeIcon icon={faSort} />
 			</td>
 			<td style={{ paddingRight: 0 }}>
-				<div className="editor-grid">
+				<div className="editor-grid-header">
 					<div className="cell-name">{name}</div>
 
 					<div className="cell-controls">
@@ -464,72 +465,66 @@ function ActionTableRow({
 							)}
 						</CButtonGroup>
 					</div>
-
-					{!isCollapsed && (
-						<>
-							<div className="cell-description">{actionSpec?.description || ''}</div>
-
-							{previewControlId && (
-								<div className="cell-bank-preview">
-									<OptionButtonPreview controlId={previewControlId} />
-								</div>
-							)}
-
-							<div className="cell-delay">
-								<CForm onSubmit={PreventDefaultHandler}>
-									<label>Delay</label>
-									<CInputGroup>
-										<NumberInputField
-											min={0}
-											step={10}
-											disabled={readonly}
-											value={action.delay}
-											setValue={innerDelay}
-										/>
-										<CInputGroupAppend>
-											<CInputGroupText>ms</CInputGroupText>
-										</CInputGroupAppend>
-									</CInputGroup>
-								</CForm>
-							</div>
-
-							<div className="cell-actions">
-								{actionSpec?.hasLearn && (
-									<CButton
-										disabled={readonly}
-										color="info"
-										size="sm"
-										onClick={innerLearn}
-										title="Capture the current values from the device"
-									>
-										Learn
-									</CButton>
-								)}
-							</div>
-
-							<div className="cell-option">
-								<CForm onSubmit={PreventDefaultHandler}>
-									{options.map((opt, i) => (
-										<MyErrorBoundary key={i}>
-											<OptionsInputField
-												key={i}
-												isOnControl={isOnControl}
-												isAction={true}
-												instanceId={action.instance}
-												option={opt}
-												actionId={action.id}
-												value={(action.options || {})[opt.id]}
-												setValue={setValue}
-												visibility={optionVisibility[opt.id]}
-												readonly={readonly}
-											/>
-										</MyErrorBoundary>
-									))}
-								</CForm>
-							</div>
-						</>
-					)}
 				</div>
+
+				{!isCollapsed && (
+					<div className="editor-grid">
+						<div className="cell-description">{actionSpec?.description || ''}</div>
+
+						{location && showButtonPreview && (
+							<div className="cell-bank-preview">
+								<OptionButtonPreview location={location} options={action.options} />
+							</div>
+						)}
+
+						<div className="cell-delay">
+							<CForm onSubmit={PreventDefaultHandler}>
+								<label>Delay</label>
+								<CInputGroup>
+									<NumberInputField min={0} step={10} disabled={readonly} value={action.delay} setValue={innerDelay} />
+									<CInputGroupAppend>
+										<CInputGroupText>ms</CInputGroupText>
+									</CInputGroupAppend>
+								</CInputGroup>
+							</CForm>
+						</div>
+
+						<div className="cell-actions">
+							{actionSpec?.hasLearn && (
+								<CButton
+									disabled={readonly}
+									color="info"
+									size="sm"
+									onClick={innerLearn}
+									title="Capture the current values from the device"
+								>
+									Learn
+								</CButton>
+							)}
+						</div>
+
+						<div className="cell-option">
+							<CForm onSubmit={PreventDefaultHandler}>
+								{options.map((opt, i) => (
+									<MyErrorBoundary key={i}>
+										<OptionsInputField
+											key={i}
+											isOnControl={!!location}
+											isAction={true}
+											instanceId={action.instance}
+											option={opt}
+											actionId={action.id}
+											value={(action.options || {})[opt.id]}
+											setValue={setValue}
+											visibility={optionVisibility[opt.id]}
+											readonly={readonly}
+										/>
+									</MyErrorBoundary>
+								))}
+							</CForm>
+						</div>
+					</div>
+				)}
 			</td>
 		</tr>
 	)
