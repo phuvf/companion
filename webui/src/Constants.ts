@@ -14,10 +14,11 @@ export const FONT_SIZES: DropdownChoice[] = [
 	{ id: '44', label: '44pt' },
 ]
 
-export const SHOW_HIDE_TOP_BAR: DropdownChoice[] = [
+export const SHOW_HIDE_STATUS_BAR: DropdownChoice[] = [
 	{ id: 'default', label: 'Follow Default' },
-	{ id: true as any, label: 'Show' },
-	{ id: false as any, label: 'Hide' },
+	{ id: 'hidden', label: 'Hide' },
+	{ id: 'top', label: 'Top' },
+	{ id: 'bottom', label: 'Bottom' },
 ]
 
 export const PRIMARY_COLOR: string = '#d50215'

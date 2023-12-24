@@ -3,7 +3,7 @@ export interface UserConfigModel {
 
 	page_direction_flipped: boolean
 	page_plusminus: boolean
-	remove_topbar: boolean
+	show_statusbar: 'top' | 'bottom' | 'hidden'
 
 	xkeys_enable: boolean
 	xkeys_legacy_layout: boolean

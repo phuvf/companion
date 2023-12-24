@@ -40,7 +40,7 @@ export interface ButtonStyleProperties {
 
 	color: number
 	bgcolor: number
-	show_topbar: boolean | 'default' | undefined
+	show_statusbar: 'default' | 'hidden' | 'top' | 'bottom'
 
 	png64: string | null
 }
