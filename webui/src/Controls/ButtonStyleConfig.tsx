@@ -2,7 +2,7 @@ import { CButton, CRow, CCol, CButtonGroup, CForm, CAlert, CInputGroup, CInputGr
 import React, { MutableRefObject, useCallback, useContext, useMemo, useState } from 'react'
 import { socketEmitPromise, SocketContext, PreventDefaultHandler } from '../util'
 import { AlignmentInputField, ColorInputField, DropdownInputField, PNGInputField, TextInputField } from '../Components'
-import { FONT_SIZES, SHOW_HIDE_TOP_BAR } from '../Constants'
+import { FONT_SIZES, SHOW_HIDE_STATUS_BAR } from '../Constants'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDollarSign, faFont, faQuestionCircle, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { SomeButtonModel } from '@companion/shared/Model/ButtonModel'
@@ -140,7 +140,7 @@ export function ButtonStyleConfigFields({
 	const setPngAlignmentValue = useCallback((val: any) => setValueInner('pngalignment', val), [setValueInner])
 	const setColorValue = useCallback((val: any) => setValueInner('color', val), [setValueInner])
 	const setBackgroundColorValue = useCallback((val: any) => setValueInner('bgcolor', val), [setValueInner])
-	const setShowTopBar = useCallback((val: any) => setValueInner('show_topbar', val), [setValueInner])
+	const setShowStatusBar = useCallback((val: any) => setValueInner('show_statusbar', val), [setValueInner])
 	const toggleExpression = useCallback(
 		() => setValueInner('textExpression', !values.textExpression),
 		[setValueInner, values.textExpression]
@@ -226,13 +226,13 @@ export function ButtonStyleConfigFields({
 							)}
 						</div>
 					</div>
-					{showField2('show_topbar') && (
+					{showField2('show_statusbar') && (
 						<div>
-							<label>Topbar</label>
+							<label>Status Bar</label>
 							<DropdownInputField
-								choices={SHOW_HIDE_TOP_BAR}
-								setValue={setShowTopBar}
-								value={values.show_topbar}
+								choices={SHOW_HIDE_STATUS_BAR}
+								setValue={setShowStatusBar}
+								value={values.show_statusbar}
 								multiple={false}
 							/>
 						</div>
