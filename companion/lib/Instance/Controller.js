@@ -25,6 +25,7 @@ import { cloneDeep } from 'lodash-es'
 import jsonPatch from 'fast-json-patch'
 import { isLabelValid, makeLabelSafe } from '@companion-app/shared/Label.js'
 import InstanceModules from './Modules.js'
+import { InstanceUserModulesManager } from './UserModulesManager.js'
 
 const InstancesRoom = 'instances'
 
@@ -59,6 +60,7 @@ class Instance extends CoreBase {
 		this.status = new InstanceStatus(registry.io, registry.controls)
 		this.moduleHost = new ModuleHost(registry, this.status)
 		this.modules = new InstanceModules(registry)
+		this.userModulesManager = new InstanceUserModulesManager(this.modules, registry.appInfo)
 
 		this.store.db = this.db.getKey('instance', {})
 
@@ -98,6 +100,8 @@ class Instance extends CoreBase {
 		this.logger.silly('instance_init', this.store.db)
 
 		await this.modules.initInstances(extraModulePath)
+
+		await this.userModulesManager.init()
 
 		for (const id in this.store.db) {
 			this.activate_module(id, false)
@@ -510,6 +514,7 @@ class Instance extends CoreBase {
 		this.definitions.clientConnect(client)
 		this.status.clientConnect(client)
 		this.modules.clientConnect(client)
+		this.userModulesManager.clientConnect(client)
 
 		client.onPromise('connections:subscribe', () => {
 			client.join(InstancesRoom)
