@@ -59,7 +59,7 @@ class Instance extends CoreBase {
 		this.definitions = new InstanceDefinitions(registry)
 		this.status = new InstanceStatus(registry.io, registry.controls)
 		this.moduleHost = new ModuleHost(registry, this.status)
-		this.modules = new InstanceModules(registry)
+		this.modules = new InstanceModules(registry.io, registry.api_router, this)
 		this.userModulesManager = new InstanceUserModulesManager(this.modules, registry.db, registry.appInfo)
 
 		this.store.db = this.db.getKey('instance', {})

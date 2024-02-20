@@ -17,12 +17,12 @@
 
 import fs from 'fs-extra'
 import { isPackaged } from '../Resources/Util.js'
-import CoreBase from '../Core/Base.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { cloneDeep } from 'lodash-es'
 import jsonPatch from 'fast-json-patch'
 import { InstanceModuleScanner } from './ModuleScanner.js'
+import LogController from '../Log/Controller.js'
 
 const ModulesRoom = 'modules'
 
@@ -41,13 +41,29 @@ const ModulesRoom = 'modules'
  * @typedef {import('@companion-app/shared/Model/ModuleInfo.js').ModuleDisplayInfo} ModuleDisplayInfo
  */
 
-class InstanceModules extends CoreBase {
+class InstanceModules {
+	#logger = LogController.createLogger('Instance/Modules')
+
 	/**
 	 * Last module info sent to clients
 	 * @type {Record<string, ModuleDisplayInfo> | null}
 	 * @access private
 	 */
 	#lastModulesJson = null
+
+	/**
+	 * The core instance controller
+	 * @type {import('./Controller.js').default}
+	 * @access public
+	 */
+	#instanceController
+
+	/**
+	 * The core interface client
+	 * @type {import('../UI/Handler.js').default}
+	 * @access public
+	 */
+	#io
 
 	/**
 	 * Known module info
@@ -73,12 +89,15 @@ class InstanceModules extends CoreBase {
 	#moduleScanner = new InstanceModuleScanner()
 
 	/**
-	 * @param {import("../Registry.js").default} registry
+	 * @param {import("../UI/Handler.js").default} io
+	 * @param {import("express").Router} api_router
+	 * @param {import("./Controller.js").default} instance
 	 */
-	constructor(registry) {
-		super(registry, 'Instance/Modules')
+	constructor(io, api_router, instance) {
+		this.#io = io
+		this.#instanceController = instance
 
-		this.registry.api_router.get('/help/module/:moduleId/*', this.#getHelpAsset)
+		api_router.get('/help/module/:moduleId/*', this.#getHelpAsset)
 	}
 
 	/**
@@ -124,7 +143,7 @@ class InstanceModules extends CoreBase {
 		}
 
 		if (extraModulePath) {
-			this.logger.info(`Looking for extra modules in: ${extraModulePath}`)
+			this.#logger.info(`Looking for extra modules in: ${extraModulePath}`)
 			const candidates = await this.#moduleScanner.loadInfoForModulesInDir(extraModulePath, true)
 			for (const candidate of candidates) {
 				// Replace any existing candidate
@@ -134,7 +153,7 @@ class InstanceModules extends CoreBase {
 				})
 			}
 
-			this.logger.info(`Found ${candidates.length} extra modules`)
+			this.#logger.info(`Found ${candidates.length} extra modules`)
 		}
 
 		// Figure out the redirects. We do this afterwards, to ensure we avoid collisions and stuff
@@ -167,13 +186,13 @@ class InstanceModules extends CoreBase {
 			if (!moduleInfo) continue
 
 			if (moduleInfo.isOverride) {
-				this.logger.info(
+				this.#logger.info(
 					`${moduleInfo.display.id}@${moduleInfo.display.version}: ${moduleInfo.display.name} (Overridden${
 						moduleInfo.isPackaged ? ' & Packaged' : ''
 					})`
 				)
 			} else {
-				this.logger.debug(`${moduleInfo.display.id}@${moduleInfo.display.version}: ${moduleInfo.display.name}`)
+				this.#logger.debug(`${moduleInfo.display.id}@${moduleInfo.display.version}: ${moduleInfo.display.name}`)
 			}
 		}
 	}
@@ -183,11 +202,11 @@ class InstanceModules extends CoreBase {
 	 * @param {string} fullpath
 	 */
 	async reloadExtraModule(fullpath) {
-		this.logger.info(`Attempting to reload module in: ${fullpath}`)
+		this.#logger.info(`Attempting to reload module in: ${fullpath}`)
 
 		const reloadedModule = await this.#moduleScanner.loadInfoForModule(fullpath, true)
 		if (reloadedModule) {
-			this.logger.info(
+			this.#logger.info(
 				`Found new module "${reloadedModule.display.id}" v${reloadedModule.display.version} in: ${fullpath}`
 			)
 
@@ -197,22 +216,22 @@ class InstanceModules extends CoreBase {
 				isOverride: true,
 			})
 
-			const newJson = cloneDeep(this.getModulesJson())
+			const newJson = cloneDeep(this.#getClientModulesJson())
 
 			// Now broadcast to any interested clients
-			if (this.io.countRoomMembers(ModulesRoom) > 0) {
+			if (this.#io.countRoomMembers(ModulesRoom) > 0) {
 				const oldObj = this.#lastModulesJson?.[reloadedModule.manifest.id]
 				if (oldObj) {
 					const patch = jsonPatch.compare(oldObj, reloadedModule.display)
 					if (patch.length > 0) {
-						this.io.emitToRoom(ModulesRoom, `modules:patch`, {
+						this.#io.emitToRoom(ModulesRoom, `modules:patch`, {
 							type: 'update',
 							id: reloadedModule.manifest.id,
 							patch,
 						})
 					}
 				} else {
-					this.io.emitToRoom(ModulesRoom, `modules:patch`, {
+					this.#io.emitToRoom(ModulesRoom, `modules:patch`, {
 						type: 'add',
 						id: reloadedModule.manifest.id,
 						info: reloadedModule.display,
@@ -223,9 +242,9 @@ class InstanceModules extends CoreBase {
 			this.#lastModulesJson = newJson
 
 			// restart usages of this module
-			this.instance.reloadUsesOfModule(reloadedModule.manifest.id)
+			this.#instanceController.reloadUsesOfModule(reloadedModule.manifest.id)
 		} else {
-			this.logger.info(`Failed to find module in: ${fullpath}`)
+			this.#logger.info(`Failed to find module in: ${fullpath}`)
 		}
 	}
 
@@ -247,7 +266,7 @@ class InstanceModules extends CoreBase {
 		client.onPromise('modules:subscribe', () => {
 			client.join(ModulesRoom)
 
-			return this.#lastModulesJson || this.getModulesJson()
+			return this.#lastModulesJson || this.#getClientModulesJson()
 		})
 
 		client.onPromise('modules:unsubscribe', () => {
@@ -261,7 +280,7 @@ class InstanceModules extends CoreBase {
 	 * Get display version of module infos
 	 * @returns {Record<string, ModuleDisplayInfo>}
 	 */
-	getModulesJson() {
+	#getClientModulesJson() {
 		/** @type {Record<string, ModuleDisplayInfo>} */
 		const result = {}
 
@@ -303,16 +322,16 @@ class InstanceModules extends CoreBase {
 						},
 					]
 				} else {
-					this.logger.silly(`Error loading help for ${moduleId}`, moduleInfo.helpPath)
-					this.logger.silly('Not a file')
+					this.#logger.silly(`Error loading help for ${moduleId}`, moduleInfo.helpPath)
+					this.#logger.silly('Not a file')
 					return ['nofile', null]
 				}
 			} else {
 				return ['nofile', null]
 			}
 		} catch (err) {
-			this.logger.silly(`Error loading help for ${moduleId}`)
-			this.logger.silly(err)
+			this.#logger.silly(`Error loading help for ${moduleId}`)
+			this.#logger.silly(err)
 			return ['nofile', null]
 		}
 	}
