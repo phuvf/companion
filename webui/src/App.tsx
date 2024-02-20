@@ -23,6 +23,7 @@ import {
 	faPlug,
 	faCog,
 	faFileImport,
+	faDog,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MyErrorBoundary, useMountEffect, UserConfigContext, SocketContext } from './util.js'
@@ -44,6 +45,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useIdleTimer } from 'react-idle-timer'
 import { ImportExport } from './ImportExport/index.js'
 import { RootAppStoreContext } from './Stores/RootAppStore.js'
+import { ModulesManager } from './Modules/Manager.js'
 
 const useTouchBackend = window.localStorage.getItem('test_touch_backend') === '1'
 const showCloudTab = window.localStorage.getItem('show_companion_cloud') === '1'
@@ -456,6 +458,11 @@ function AppContent({ buttonGridHotPress }: AppContentProps) {
 					</CNavLink>
 				</CNavItem>
 				<CNavItem>
+					<CNavLink to="/modules">
+						<FontAwesomeIcon icon={faDog} /> Modules
+					</CNavLink>
+				</CNavItem>
+				<CNavItem>
 					<CNavLink to="/log">
 						<FontAwesomeIcon icon={faClipboardList} /> Log
 					</CNavLink>
@@ -497,6 +504,11 @@ function AppContent({ buttonGridHotPress }: AppContentProps) {
 				<CTabPane className={getClassForPane('/import-export')}>
 					<MyErrorBoundary>
 						<ImportExport />
+					</MyErrorBoundary>
+				</CTabPane>
+				<CTabPane className={getClassForPane('/modules')}>
+					<MyErrorBoundary>
+						<ModulesManager />
 					</MyErrorBoundary>
 				</CTabPane>
 				{getClassForPane('/log') !== '' && (
