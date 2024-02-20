@@ -11,12 +11,13 @@ export class InstanceModuleScanner {
 	 * @access private
 	 * @param {string} searchDir - Path to search for modules
 	 * @param {boolean} checkForPackaged - Whether to check for a packaged version
-	 * @returns {Promise<import('./Modules.js').ModuleInfo[]>}
+	 * @returns {Promise<import('./Modules.js').NewModuleVersionInfo[]>}
 	 */
 	async loadInfoForModulesInDir(searchDir, checkForPackaged) {
 		if (await fs.pathExists(searchDir)) {
 			const candidates = await fs.readdir(searchDir)
 
+			/** @type {Array<Promise<import('./Modules.js').NewModuleVersionInfo | undefined>>} */
 			const ps = []
 
 			for (const candidate of candidates) {
@@ -37,6 +38,7 @@ export class InstanceModuleScanner {
 	 * @access private
 	 * @param {string} fullpath - Fullpath to the module
 	 * @param {boolean} checkForPackaged - Whether to check for a packaged version
+	 * @returns {Promise<import('./Modules.js').NewModuleVersionInfo | undefined>}
 	 */
 	async loadInfoForModule(fullpath, checkForPackaged) {
 		try {
@@ -78,7 +80,7 @@ export class InstanceModuleScanner {
 				keywords: manifestJson.keywords,
 			}
 
-			/** @type {import('./Modules.js').ModuleInfo} */
+			/** @type {import('./Modules.js').NewModuleVersionInfo} */
 			const moduleManifestExt = {
 				manifest: manifestJson,
 				basePath: path.resolve(fullpath),
