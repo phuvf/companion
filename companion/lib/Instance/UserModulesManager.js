@@ -6,11 +6,25 @@ export class InstanceUserModulesManager {
 	#logger = LogController.createLogger('Instance/UserModulesManager')
 
 	/**
+	 * @type {import('../Data/Database.js').default}
+	 * @access private
+	 * @readonly
+	 */
+	#db
+
+	/**
 	 * @type {import('./Modules.js').default}
 	 * @access private
 	 * @readonly
 	 */
 	#modulesManager
+
+	/**
+	 * @type {import('@companion-app/shared/Model/UserModules.js').UserModuleEntry[]}
+	 * @access private
+	 * @readonly
+	 */
+	#store
 
 	/**
 	 * Absolute path for storing user modules on disk
@@ -30,11 +44,15 @@ export class InstanceUserModulesManager {
 
 	/**
 	 * @param {import('./Modules.js').default} modulesManager
+	 * @param {import('../Data/Database.js').default} db
 	 * @param {import('../Registry.js').AppInfo} appInfo
 	 */
-	constructor(modulesManager, appInfo) {
+	constructor(modulesManager, db, appInfo) {
 		this.#modulesManager = modulesManager
+		this.#db = db
 		this.#userModulesDir = path.join(appInfo.configDir, 'user-modules')
+
+		this.#store = db.getKey('user-modules', [])
 	}
 
 	/**
