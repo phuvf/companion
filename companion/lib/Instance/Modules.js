@@ -23,7 +23,6 @@ import { cloneDeep } from 'lodash-es'
 import jsonPatch from 'fast-json-patch'
 import { InstanceModuleScanner } from './ModuleScanner.js'
 import LogController from '../Log/Controller.js'
-import semver from 'semver'
 import { assertNever } from '@companion-module/base'
 
 const ModulesRoom = 'modules'
@@ -53,7 +52,7 @@ const ModulesRoom = 'modules'
  * }} NewModuleVersionInfo
  *
  * @typedef {{
- *   type: 'bundled' | 'legacy' | 'dev' | 'user'
+ *   type: 'builtin' | 'dev' | 'user'
  *   id?: string
  * }} NewModuleUseVersion
  *
@@ -73,12 +72,7 @@ class NewModuleInfo {
 	/**
 	 * @type {NewModuleVersionInfo | null}
 	 */
-	legacyModule = null
-
-	/**
-	 * @type {NewModuleVersionInfo | null}
-	 */
-	bundledModule = null
+	builtinModule = null
 
 	/**
 	 * @type {Record<string, NewModuleVersionInfo | undefined>}
@@ -108,10 +102,8 @@ class NewModuleInfo {
 	getSelectedVersion() {
 		if (!this.useVersion) return null
 		switch (this.useVersion.type) {
-			case 'legacy':
-				return this.legacyModule
-			case 'bundled':
-				return this.bundledModule
+			case 'builtin':
+				return this.builtinModule
 			case 'dev':
 				return this.useVersion.id ? this.devVersions[this.useVersion.id] ?? null : null
 			case 'user':
@@ -228,7 +220,7 @@ export default class InstanceModules {
 		for (const candidate of legacyCandidates) {
 			candidate.display.isLegacy = true
 			const moduleInfo = this.#getOrCreateModuleEntry(candidate.manifest.id)
-			moduleInfo.legacyModule = candidate
+			moduleInfo.builtinModule = candidate
 		}
 
 		// Load modules from other folders in order of priority
@@ -236,7 +228,7 @@ export default class InstanceModules {
 			const candidates = await this.#moduleScanner.loadInfoForModulesInDir(searchDir, false)
 			for (const candidate of candidates) {
 				const moduleInfo = this.#getOrCreateModuleEntry(candidate.manifest.id)
-				moduleInfo.bundledModule = candidate
+				moduleInfo.builtinModule = candidate
 			}
 		}
 
@@ -258,8 +250,7 @@ export default class InstanceModules {
 			const allVersions = [
 				...Object.values(moduleInfo.devVersions),
 				...Object.values(moduleInfo.userVersions),
-				moduleInfo.bundledModule,
-				moduleInfo.legacyModule,
+				moduleInfo.builtinModule,
 			]
 			for (const moduleVersion of allVersions) {
 				if (moduleVersion && Array.isArray(moduleVersion.manifest.legacyIds)) {
@@ -318,13 +309,8 @@ export default class InstanceModules {
 				continue
 			}
 
-			if (moduleInfo.bundledModule) {
-				moduleInfo.useVersion = { type: 'bundled' }
-				continue
-			}
-
-			if (moduleInfo.legacyModule) {
-				moduleInfo.useVersion = { type: 'legacy' }
+			if (moduleInfo.builtinModule) {
+				moduleInfo.useVersion = { type: 'builtin' }
 				continue
 			}
 		}
