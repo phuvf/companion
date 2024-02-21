@@ -340,7 +340,7 @@ const ConnectionsTableRow = observer(function ConnectionsTableRow({
 	}
 
 	const openBugUrl = useCallback(() => {
-		const url = moduleInfo?.bugUrl
+		const url = moduleInfo?.baseInfo?.bugUrl
 		if (url) windowLinkOpen({ href: url })
 	}, [moduleInfo])
 
@@ -362,7 +362,7 @@ const ConnectionsTableRow = observer(function ConnectionsTableRow({
 			<td onClick={doEdit} className="hand">
 				{moduleInfo ? (
 					<>
-						{moduleInfo.isLegacy && (
+						{moduleInfo.selectedVersion.isLegacy && (
 							<>
 								<FontAwesomeIcon
 									icon={faExclamationTriangle}
@@ -371,10 +371,10 @@ const ConnectionsTableRow = observer(function ConnectionsTableRow({
 								/>{' '}
 							</>
 						)}
-						{moduleInfo.shortname ?? ''}
+						{moduleInfo.baseInfo.shortname ?? ''}
 
 						<br />
-						{moduleInfo.manufacturer ?? ''}
+						{moduleInfo.baseInfo.manufacturer ?? ''}
 					</>
 				) : (
 					connection.instance_type
@@ -389,7 +389,7 @@ const ConnectionsTableRow = observer(function ConnectionsTableRow({
 								onClick={doShowHelp}
 								title="Help"
 								size="md"
-								disabled={!moduleInfo?.hasHelp}
+								disabled={!moduleInfo?.baseInfo?.hasHelp}
 								style={{ padding: 4 }}
 							>
 								<FontAwesomeIcon icon={faQuestionCircle} />
@@ -399,7 +399,7 @@ const ConnectionsTableRow = observer(function ConnectionsTableRow({
 								onClick={openBugUrl}
 								size="md"
 								title="Issue Tracker"
-								disabled={!moduleInfo?.bugUrl}
+								disabled={!moduleInfo?.baseInfo?.bugUrl}
 								style={{ padding: 4 }}
 							>
 								<FontAwesomeIcon icon={faBug} />

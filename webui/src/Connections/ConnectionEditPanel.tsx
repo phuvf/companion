@@ -184,8 +184,8 @@ const ConnectionEditPanelInner = observer(function ConnectionEditPanelInner({
 	return (
 		<div>
 			<h5>
-				{moduleInfo?.shortname ?? connectionType} configuration
-				{moduleInfo?.hasHelp && (
+				{moduleInfo?.baseInfo?.shortname ?? connectionType} configuration
+				{moduleInfo?.baseInfo?.hasHelp && (
 					<div className="float_right" onClick={() => connectionType && showHelp(connectionType)}>
 						<FontAwesomeIcon icon={faQuestionCircle} />
 					</div>

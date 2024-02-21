@@ -86,7 +86,7 @@ const VariablesConnectionList = observer(function VariablesConnectionList({
 					className="choose_connection mb-3 mr-2"
 					onClick={() => setConnectionId(connectionId ?? null)}
 				>
-					{moduleInfo?.name ?? moduleInfo?.name ?? '?'} ({label ?? connectionId})
+					{moduleInfo?.baseInfo?.name ?? moduleInfo?.baseInfo?.name ?? '?'} ({label ?? connectionId})
 				</CButton>
 			</div>
 		)

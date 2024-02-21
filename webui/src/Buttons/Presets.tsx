@@ -15,7 +15,7 @@ import type { UIPresetDefinition } from '@companion-app/shared/Model/Presets.js'
 import type { Operation as JsonPatchOperation } from 'fast-json-patch'
 import { RootAppStoreContext } from '../Stores/RootAppStore.js'
 import { observer } from 'mobx-react-lite'
-import type { ModuleDisplayInfo } from '@companion-app/shared/Model/ModuleInfo.js'
+import type { NewClientModuleInfo } from '@companion-app/shared/Model/ModuleInfo.js'
 
 interface InstancePresetsProps {
 	resetToken: string
@@ -138,7 +138,7 @@ const PresetsConnectionList = observer(function PresetsConnectionList({
 					className="choose_connection mr-2 mb-2"
 					onClick={() => setConnectionAndCategory([id, null])}
 				>
-					{moduleInfo?.name ?? '?'} ({connectionInfo?.label ?? id})
+					{moduleInfo?.baseInfo?.name ?? '?'} ({connectionInfo?.label ?? id})
 				</CButton>
 			</div>
 		)
@@ -166,7 +166,7 @@ const PresetsConnectionList = observer(function PresetsConnectionList({
 interface PresetsCategoryListProps {
 	presets: Record<string, UIPresetDefinition>
 	connectionInfo: ClientConnectionConfig
-	moduleInfo: ModuleDisplayInfo | undefined
+	moduleInfo: NewClientModuleInfo | undefined
 	selectedConnectionId: string
 	setConnectionAndCategory: (info: [connectionId: string | null, category: string | null]) => void
 }
@@ -204,7 +204,7 @@ function PresetsCategoryList({
 				<CButton color="primary" size="sm" onClick={doBack}>
 					Back
 				</CButton>
-				{moduleInfo?.name ?? '?'} ({connectionInfo?.label ?? selectedConnectionId})
+				{moduleInfo?.baseInfo?.name ?? '?'} ({connectionInfo?.label ?? selectedConnectionId})
 			</h5>
 
 			{buttons.length === 0 ? (
