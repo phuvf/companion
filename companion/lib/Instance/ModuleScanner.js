@@ -87,6 +87,7 @@ export class InstanceModuleScanner {
 				helpPath: hasHelp ? helpPath : null,
 				display: moduleDisplay,
 				isPackaged: isPackaged,
+				versionId: moduleDisplay.version,
 			}
 
 			this.#logger.silly(`found module ${moduleDisplay.id}@${moduleDisplay.version}`)
