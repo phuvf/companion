@@ -8,6 +8,10 @@ export class ModuleInfoStore {
 	// TODO - should this be more granular/observable?
 	readonly modules = observable.map<string, NewClientModuleInfo>()
 
+	public get count() {
+		return this.modules.size
+	}
+
 	public reset = action((newData: Record<string, NewClientModuleInfo | undefined> | null) => {
 		this.modules.clear()
 
