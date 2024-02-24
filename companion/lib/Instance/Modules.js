@@ -434,6 +434,7 @@ export default class InstanceModules {
 				version: version.display.version,
 				isLegacy: version.display.isLegacy ?? false,
 				type,
+				hasHelp: !!version.helpPath,
 			}
 		}
 
@@ -449,10 +450,8 @@ export default class InstanceModules {
 						...Object.values(module.devVersions).map(
 							(ver, i) =>
 								ver && {
+									...translateVersion(ver, 'dev'),
 									version: `dev-${i}`,
-									isLegacy: ver.display.isLegacy ?? false,
-									/** @type {import('@companion-app/shared/Model/ModuleInfo.js').NewClientModuleVersionInfo['type']} */
-									type: 'dev',
 								}
 						),
 					]),
