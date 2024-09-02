@@ -23,6 +23,7 @@ import { cloneDeep } from 'lodash-es'
 import { nanoid } from 'nanoid'
 import pDebounce from 'p-debounce'
 import { getStreamDeckDeviceInfo } from '@elgato-stream-deck/node'
+import { getBlackmagicControllerDeviceInfo } from '@blackmagic-controller/node'
 import { usb } from 'usb'
 // @ts-ignore
 import shuttleControlUSB from 'shuttle-control-usb'
@@ -44,6 +45,7 @@ import SurfaceIPVideohubPanel from './IP/VideohubPanel.js'
 import FrameworkMacropadDriver from './USB/FrameworkMacropad.js'
 import CoreBase from '../Core/Base.js'
 import { SurfaceGroup } from './Group.js'
+import { SurfaceUSBBlackmagicController } from './USB/BlackmagicController.js'
 
 // Force it to load the hidraw driver just in case
 HID.setDriverType('hidraw')
@@ -61,7 +63,7 @@ class SurfaceController extends CoreBase {
 
 	/**
 	 * All the opened and active surfaces
-	 * @type {Map<string, SurfaceHandler>}
+	 * @type {Map<string, SurfaceHandler | null>}
 	 * @access private
 	 */
 	#surfaceHandlers = new Map()
@@ -450,7 +452,9 @@ class SurfaceController extends CoreBase {
 		})
 
 		client.onPromise('surfaces:forget', (id) => {
-			for (let surface of this.#surfaceHandlers.values()) {
+			for (const surface of this.#surfaceHandlers.values()) {
+				if (!surface) continue
+
 				if (surface.surfaceId == id) {
 					return 'device is active'
 				}
@@ -504,7 +508,7 @@ class SurfaceController extends CoreBase {
 			if (groupId && !group) throw new Error(`Group does not exist: ${groupId}`)
 
 			const surfaceHandler = Array.from(this.#surfaceHandlers.values()).find(
-				(surface) => surface.surfaceId === surfaceId
+				(surface) => surface && surface.surfaceId === surfaceId
 			)
 			if (!surfaceHandler) throw new Error(`Surface does not exist or is not connected: ${surfaceId}`)
 			// TODO - we can handle this if it is still in the config
@@ -935,6 +939,18 @@ class SurfaceController extends CoreBase {
 											'framework-macropad',
 											FrameworkMacropadDriver
 										)
+									} else if (
+										this.userconfig.getKey('blackmagic_controller_enable') &&
+										getBlackmagicControllerDeviceInfo(deviceInfo)
+									) {
+										await this.#addDevice(
+											{
+												path: deviceInfo.path,
+												options: {},
+											},
+											'blackmagic-controller',
+											SurfaceUSBBlackmagicController
+										)
 									}
 								}
 							})
@@ -1084,6 +1100,9 @@ class SurfaceController extends CoreBase {
 			}
 		}
 
+		// Define something, so that it is known it is loading
+		this.#surfaceHandlers.set(deviceInfo.path, null)
+
 		try {
 			const dev = await factory.create(deviceInfo.path, deviceInfo.options)
 			this.#createSurfaceHandler(deviceInfo.path, type, dev)
@@ -1093,6 +1112,9 @@ class SurfaceController extends CoreBase {
 			})
 		} catch (e) {
 			this.logger.error(`Failed to add "${type}" device: ${e}`)
+
+			// Failed, remove the placeholder
+			this.#surfaceHandlers.delete(deviceInfo.path)
 		}
 	}
 
@@ -1309,6 +1331,8 @@ class SurfaceController extends CoreBase {
 
 		// Re-attach in auto-groups
 		for (const surface of this.#surfaceHandlers.values()) {
+			if (!surface) continue
+
 			try {
 				surface.resetConfig()
 
@@ -1423,7 +1447,7 @@ class SurfaceController extends CoreBase {
 		const surfaces = Array.from(this.#surfaceHandlers.values())
 
 		// try and find exact match
-		let surface = surfaces.find((d) => d.surfaceId === surfaceId)
+		let surface = surfaces.find((d) => d && d.surfaceId === surfaceId)
 		if (surface) return surface
 
 		// only try more variations if the id isnt new format
@@ -1431,17 +1455,17 @@ class SurfaceController extends CoreBase {
 
 		// try the most likely streamdeck prefix
 		let surfaceId2 = `streamdeck:${surfaceId}`
-		surface = surfaces.find((d) => d.surfaceId === surfaceId2)
+		surface = surfaces.find((d) => d && d.surfaceId === surfaceId2)
 		if (surface) return surface
 
 		// it is unlikely, but it could be a loupedeck
 		surfaceId2 = `loupedeck:${surfaceId}`
-		surface = surfaces.find((d) => d.surfaceId === surfaceId2)
+		surface = surfaces.find((d) => d && d.surfaceId === surfaceId2)
 		if (surface) return surface
 
 		// or maybe a satellite?
 		surfaceId2 = `satellite-${surfaceId}`
-		return surfaces.find((d) => d.surfaceId === surfaceId2)
+		return surfaces.find((d) => d && d.surfaceId === surfaceId2)
 	}
 }
 

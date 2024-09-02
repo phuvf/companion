@@ -181,6 +181,29 @@ export const SurfacesConfig = observer(function SurfacesConfig({ config, setValu
 					</CButton>
 				</td>
 			</tr>
+			<tr>
+				<td>
+					Enable connected Blackmagic Atem Micro Panel
+					<br />
+					<em>You must not run the Atem software at the same time</em>
+					<br />
+					<em>(Requires Companion restart)</em>
+				</td>
+				<td>
+					<CFormSwitch
+						className="float-right"
+						color="success"
+						checked={config.blackmagic_controller_enable}
+						size="xl"
+						onChange={(e) => setValue('blackmagic_controller_enable', e.currentTarget.checked)}
+					/>
+				</td>
+				<td>
+					<CButton onClick={() => resetValue('blackmagic_controller_enable')} title="Reset to default">
+						<FontAwesomeIcon icon={faUndo} />
+					</CButton>
+				</td>
+			</tr>
 		</>
 	)
 })
