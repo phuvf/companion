@@ -46,7 +46,7 @@ import FrameworkMacropadDriver from './USB/FrameworkMacropad.js'
 import CoreBase from '../Core/Base.js'
 import { SurfaceGroup } from './Group.js'
 import { SurfaceUSBBlackmagicController } from './USB/BlackmagicController.js'
-import { VariablesValues } from '../Variables/Values.js'
+import { VARIABLE_UNKNOWN_VALUE } from '../Variables/Util.js'
 
 // Force it to load the hidraw driver just in case
 HID.setDriverType('hidraw')
@@ -858,14 +858,7 @@ class SurfaceController extends CoreBase {
 								if (deviceInfo.path && !this.#surfaceHandlers.has(deviceInfo.path)) {
 									if (!ignoreStreamDeck) {
 										if (getStreamDeckDeviceInfo(deviceInfo)) {
-											await this.#addDevice(
-												{
-													path: deviceInfo.path,
-													options: {},
-												},
-												'elgato-streamdeck',
-												ElgatoStreamDeckDriver
-											)
+											await this.#addDevice(deviceInfo.path, {}, 'elgato-streamdeck', ElgatoStreamDeckDriver)
 											return
 										}
 									}
@@ -874,37 +867,21 @@ class SurfaceController extends CoreBase {
 										deviceInfo.vendorId === 0xffff &&
 										(deviceInfo.productId === 0x1f40 || deviceInfo.productId === 0x1f41)
 									) {
-										await this.#addDevice(
-											{
-												path: deviceInfo.path,
-												options: {},
-											},
-											'infinitton',
-											InfinittonDriver
-										)
+										await this.#addDevice(deviceInfo.path, {}, 'infinitton', InfinittonDriver)
 									} else if (
 										// More specific match has to be above xkeys
 										deviceInfo.vendorId === vecFootpedal.vids.VEC &&
 										deviceInfo.productId === vecFootpedal.pids.FOOTPEDAL
 									) {
 										if (this.userconfig.getKey('vec_footpedal_enable')) {
-											await this.#addDevice(
-												{
-													path: deviceInfo.path,
-													options: {},
-												},
-												'vec-footpedal',
-												VECFootpedalDriver
-											)
+											await this.#addDevice(deviceInfo.path, {}, 'vec-footpedal', VECFootpedalDriver)
 										}
 									} else if (deviceInfo.vendorId === 1523 && deviceInfo.interface === 0) {
 										if (this.userconfig.getKey('xkeys_enable')) {
 											await this.#addDevice(
+												deviceInfo.path,
 												{
-													path: deviceInfo.path,
-													options: {
-														useLegacyLayout: !!this.userconfig.getKey('xkeys_legacy_layout'),
-													},
+													useLegacyLayout: !!this.userconfig.getKey('xkeys_legacy_layout'),
 												},
 												'xkeys',
 												XKeysDriver
@@ -917,14 +894,7 @@ class SurfaceController extends CoreBase {
 											deviceInfo.productId === shuttleControlUSB.pids.SHUTTLEPRO_V2)
 									) {
 										if (this.userconfig.getKey('contour_shuttle_enable')) {
-											await this.#addDevice(
-												{
-													path: deviceInfo.path,
-													options: {},
-												},
-												'contour-shuttle',
-												ContourShuttleDriver
-											)
+											await this.#addDevice(deviceInfo.path, {}, 'contour-shuttle', ContourShuttleDriver)
 										}
 									} else if (
 										deviceInfo.vendorId === 0x32ac && // frame.work
@@ -932,25 +902,15 @@ class SurfaceController extends CoreBase {
 										deviceInfo.usagePage === 0xffdd && // rawhid interface
 										deviceInfo.usage === 0x61
 									) {
-										await this.#addDevice(
-											{
-												path: deviceInfo.path,
-												options: {},
-											},
-											'framework-macropad',
-											FrameworkMacropadDriver
-										)
+										await this.#addDevice(deviceInfo.path, {}, 'framework-macropad', FrameworkMacropadDriver)
 									} else if (
 										this.userconfig.getKey('blackmagic_controller_enable') &&
 										getBlackmagicControllerDeviceInfo(deviceInfo)
 									) {
 										await this.#addDevice(
-											{
-												path: deviceInfo.path,
-												options: {
-													variableValues: this.variablesController.values,
-												},
-											},
+											deviceInfo.path,
+											{},
+
 											'blackmagic-controller',
 											SurfaceUSBBlackmagicController
 										)
@@ -971,28 +931,12 @@ class SurfaceController extends CoreBase {
 												deviceInfo.model === LoupedeckModelId.RazerStreamController ||
 												deviceInfo.model === LoupedeckModelId.RazerStreamControllerX
 											) {
-												await this.#addDevice(
-													{
-														path: deviceInfo.path,
-														options: {},
-													},
-													'loupedeck-live',
-													LoupedeckLiveDriver,
-													true
-												)
+												await this.#addDevice(deviceInfo.path, {}, 'loupedeck-live', LoupedeckLiveDriver, true)
 											} else if (
 												deviceInfo.model === LoupedeckModelId.LoupedeckCt ||
 												deviceInfo.model === LoupedeckModelId.LoupedeckCtV1
 											) {
-												await this.#addDevice(
-													{
-														path: deviceInfo.path,
-														options: {},
-													},
-													'loupedeck-ct',
-													SurfaceUSBLoupedeckCt,
-													true
-												)
+												await this.#addDevice(deviceInfo.path, {}, 'loupedeck-ct', SurfaceUSBLoupedeckCt, true)
 											}
 										}
 									})
@@ -1079,21 +1023,22 @@ class SurfaceController extends CoreBase {
 
 	/**
 	 *
-	 * @param {LocalUSBDeviceInfo} deviceInfo
+	 * @param {string} devicePath
+	 * @param {Omit<LocalUSBDeviceOptions, 'executeExpression'>} deviceOptions
 	 * @param {string} type
 	 * @param {{ create: (path: string, options: LocalUSBDeviceOptions) => Promise<import('./Handler.js').SurfacePanel>}} factory
 	 * @param {boolean} skipHidAccessCheck
 	 * @returns
 	 */
-	async #addDevice(deviceInfo, type, factory, skipHidAccessCheck = false) {
-		this.removeDevice(deviceInfo.path)
+	async #addDevice(devicePath, deviceOptions, type, factory, skipHidAccessCheck = false) {
+		this.removeDevice(devicePath)
 
-		this.logger.silly('add device ' + deviceInfo.path)
+		this.logger.silly('add device ' + devicePath)
 
 		if (!skipHidAccessCheck) {
 			// Check if we have access to the device
 			try {
-				const devicetest = new HID.HID(deviceInfo.path)
+				const devicetest = new HID.HID(devicePath)
 				devicetest.close()
 			} catch (e) {
 				this.logger.error(
@@ -1104,11 +1049,14 @@ class SurfaceController extends CoreBase {
 		}
 
 		// Define something, so that it is known it is loading
-		this.#surfaceHandlers.set(deviceInfo.path, null)
+		this.#surfaceHandlers.set(devicePath, null)
 
 		try {
-			const dev = await factory.create(deviceInfo.path, deviceInfo.options)
-			this.#createSurfaceHandler(deviceInfo.path, type, dev)
+			const dev = await factory.create(devicePath, {
+				...deviceOptions,
+				executeExpression: this.#surfaceExecuteExpression.bind(this),
+			})
+			this.#createSurfaceHandler(devicePath, type, dev)
 
 			setImmediate(() => {
 				this.updateDevicesList()
@@ -1117,7 +1065,34 @@ class SurfaceController extends CoreBase {
 			this.logger.error(`Failed to add "${type}" device: ${e}`)
 
 			// Failed, remove the placeholder
-			this.#surfaceHandlers.delete(deviceInfo.path)
+			this.#surfaceHandlers.delete(devicePath)
+		}
+	}
+
+	/** @type {SurfaceExecuteExpressionFn} */
+	#surfaceExecuteExpression(str, surfaceId, injectedVariableValues) {
+		const injectedVariableValuesComplete = {
+			...this.#getInjectedVariablesForSurfaceId(surfaceId),
+			...injectedVariableValues,
+		}
+
+		return this.variablesController.values.executeExpression(str, undefined, undefined, injectedVariableValuesComplete)
+	}
+
+	/**
+	 * Variables to inject based on location
+	 * @param {string} surfaceId
+	 * @returns {import('@companion-module/base').CompanionVariableValues}
+	 */
+	#getInjectedVariablesForSurfaceId(surfaceId) {
+		const pageNumber = this.devicePageGet(surfaceId)
+
+		return {
+			'$(this:surface_id)': surfaceId,
+			// Reactivity is triggered manually
+			'$(this:page)': pageNumber,
+			// Reactivity happens for these because of references to the inner variables
+			'$(this:page_name)': pageNumber ? `$(internal:page_number_${pageNumber}_name)` : VARIABLE_UNKNOWN_VALUE,
 		}
 	}
 
@@ -1494,12 +1469,9 @@ export default SurfaceController
 
 /**
  * @typedef {{
- *   path: string
- *   options: LocalUSBDeviceOptions
- * }} LocalUSBDeviceInfo
- *
- * @typedef {{
+ *   executeExpression: SurfaceExecuteExpressionFn
  *   useLegacyLayout?: boolean
- *   variableValues?: VariablesValues
  * }} LocalUSBDeviceOptions
+ *
+ * @typedef {(str: string, surfaceId: string, injectedVariableValues?: import('@companion-module/base').CompanionVariableValues) => { value: boolean|number|string|undefined, variableIds: Set<string> }} SurfaceExecuteExpressionFn
  */
